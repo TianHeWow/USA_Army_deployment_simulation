@@ -1,0 +1,714 @@
+---
+title: "case2"
+author: "Tian He"
+date: "November 10, 2018"
+output:
+  word_document: default
+  html_document: default
+---
+## 1.Overview
+- The Air Force’s Air Mobility Command (AMC) has a major issue with quickly moving deploying troops to their destinations in the Middle East. Troops routinely get caught in bottlenecks at intermediate airports while at other airports there are not enough troops to fill up flights. The AMC commander wants to know what changes to make to the current system to speed up the deployment process.
+
+- Platoons have historically deployed at an average rate
+of ten platoons per day obeying poisson distribution
+- Rountes are determined
+- Have 1 additional boeing 777 flight and 1 additional c-5 flight. Need to decide to put these two additional fights on which flight legs. One flight leg can only have one more same flight.
+
+## 2.Methodology
+- Select flight routes by estimation based on volume balance.
+
+- Try two basic policy:1.The plane take off until it is full. 2.
+C130 take off when there are 2 platoons, boeing take off when when there are 3 platoons, c5 take off when when there are 2 platoons
+
+- Assign 2 additional flights to flight legs.
+
+- Use simmer to simulate all the possible situations combining basic policy and assignments for 3 month. Repeat each simulation for 300 times and record the average time used for all flight routes.
+
+- Use ANOVA and TukeyHSD to find out the best policy and assignment
+
+## 3.Results
+
+### 3.1 For take off until full
+```{r}
+library(simmer)
+library(dplyr)
+library(magrittr)
+c130 <- 2
+boeing <- 5
+c5 <- 3
+r_di_ka <- trajectory("di_ka") %>%
+  batch(c5, permanent=FALSE, name = "di-no") %>%
+  seize("c5dn", amount = 1) %>%
+  timeout(5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5) %>%
+          release("c5dn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ro") %>%
+          seize("boeingnro", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnro", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(c5, permanent=FALSE, name = "ro-do") %>%
+                  seize("c5rd", amount = 1) %>%
+                  timeout(8) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(8) %>%
+                      release("c5rd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ka") %>%
+                      seize("c130dk", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130dk",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+                  
+r_di_bag <- trajectory("di_ba") %>%
+  batch(c5, permanent=FALSE, name = "di-no") %>%
+  seize("c5dn", amount = 1) %>%
+  timeout(5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5) %>%
+          release("c5dn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(7.5) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(7.5) %>%
+                      release("boeingrd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ba") %>%
+                      seize("c130db", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130db",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+
+r_di_do <- trajectory("di_do") %>%
+  batch(c5, permanent=FALSE, name = "di-no") %>%
+  seize("c5dn", amount = 1) %>%
+  timeout(5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5) %>%
+          release("c5dn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(15) %>%
+                      release("boeingrd",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE))
+
+r_po_bag <- trajectory("Po_Bag") %>%
+  batch(c5, permanent=FALSE, name = "po-no") %>%
+  seize("c5pn", amount = 1) %>%
+  timeout(5.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5.5) %>%
+          release("c5pn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ro") %>%
+          seize("boeingnro", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnro", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(c5, permanent=FALSE, name = "ro-do") %>%
+                  seize("c5rd", amount = 1) %>%
+                  timeout(7.5) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(7.5) %>%
+                      release("c5rd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ba") %>%
+                      seize("c130db", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130db",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+
+
+r_po_ka <- trajectory("po_ka") %>%
+  batch(c5, permanent=FALSE, name = "po-no") %>%
+  seize("c5pn", amount = 1) %>%
+  timeout(5.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5.5) %>%
+          release("c5pn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(7.5) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(7.5) %>%
+                      release("boeingrd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ka") %>%
+                      seize("c130dk", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130dk",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+
+
+r_po_do <- trajectory("Po_Do") %>%
+  batch(c5, permanent=FALSE, name = "po-no") %>%
+  seize("c5pn", amount = 1) %>%
+  timeout(5.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5.5) %>%
+          release("c5pn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(15) %>%
+                  release("boeingrd",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE))
+
+r_ra_ba <- trajectory("ra_ba") %>%
+  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+  seize("boeingrd", amount = 1) %>%
+  timeout(7.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(7.5) %>%
+          release("boeingrd", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(c130, permanent=FALSE, name = "do-ba") %>%
+          seize("c130db", amount = 1) %>%
+          timeout(11) %>%
+          release("c130db",amount=1)
+                    )%>%
+          synchronize(wait = FALSE)
+
+r_ra_do <- trajectory("ra_do") %>%
+  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+  seize("boeingrd", amount = 1) %>%
+  timeout(15) %>%
+  release("boeingrd",amount=1)
+
+r_ro_ba <- trajectory("ro_ba") %>%
+  batch(c5, permanent=FALSE, name = "ro-do") %>%
+  seize("c5rd", amount = 1) %>%
+  timeout(8) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(8) %>%
+          release("c5rd", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(c130, permanent=FALSE, name = "do-ba") %>%
+          seize("c130db", amount = 1) %>%
+          timeout(11) %>%
+          release("c130db",amount=1)
+                    )%>%
+          synchronize(wait = FALSE)
+
+r_ro_do <- trajectory("ro_do") %>%
+  batch(c5, permanent=FALSE, name = "ro-do") %>%
+  seize("c5rd", amount = 1) %>%
+  timeout(16) %>%
+  release("c5rd",amount=1)
+
+time_avg <- data.frame(matrix(0, ncol = 9, nrow = 300))
+c5_num <- matrix(c(1, 1, 2, 1, 2, 1, 2, 1, 1), nrow = 3, ncol = 3)
+boeing_num <- matrix(c(1, 1, 2, 1, 2, 1, 2, 1, 1), nrow = 3, ncol = 3)
+for (i in 1:300){
+set.seed(i)
+average_time <- c()
+  for (z in 1:3){
+    for(j in 1:3){
+    
+      env <- simmer("deployment")
+      env %>%
+        add_resource("c5dn", c5_num[z, 1]) %>%
+        add_resource("c5pn", c5_num[z, 2]) %>%
+        add_resource("boeingnra", boeing_num[j, 1]) %>%
+        add_resource("boeingnro", boeing_num[j, 2]) %>%
+        add_resource("boeingrd", boeing_num[j, 3]) %>%
+        add_resource("c5rd", c5_num[z, 3]) %>%
+        add_resource("c130db", 1) %>%
+        add_resource("c130dk", 1) %>%
+        add_generator("di_ka", r_di_ka, function() rexp(1, rate = 10*0.07/24), mon = 1) %>%
+        add_generator("di_bag", r_di_bag, function() rexp(1, rate = 10*0.04/24), mon = 1) %>%
+        add_generator("di_do", r_di_do, function() rexp(1, rate = 10*0.02/24), mon = 1) %>%
+        add_generator("po_bag", r_po_bag, function() rexp(1, rate = 10*0.07/24), mon = 1) %>%
+        add_generator("po_ka", r_po_ka, function() rexp(1, rate = 10*0.08/24), mon = 1) %>%
+        add_generator("po_do", r_po_do, function() rexp(1, rate = 10*0.02/24), mon = 1) %>%
+        add_generator("ra_ba", r_ra_ba, function() rexp(1, rate = 10*0.01/24), mon = 1) %>%
+        add_generator("ra_do", r_ra_do, function() rexp(1, rate = 10*0.02/24), mon = 1) %>%
+        add_generator("ro_ba", r_ro_ba, function() rexp(1, rate = 10*0.01/24), mon = 1) %>%
+        add_generator("ro_do", r_ro_do, function() rexp(1, rate = 10*0.01/24), mon = 1) %>%
+        run(90*24)
+      
+      deploy <- get_mon_arrivals(env)
+      deploy2 <- deploy %>% group_by(name) %>%
+      summarise(time_used = max(end_time) - min(start_time))
+      average_time <- c(average_time, mean(deploy2$time_used))
+    }
+  }
+time_avg[i, ] <- average_time
+}
+
+time_avg_1 <- colMeans(time_avg)
+time_avg_2 <- rbind(time_avg, time_avg_1)
+
+```
+
+
+- Use ANOVA to see if there is ture difference between each strategy
+
+
+```{r}
+print(time_avg_1)
+time_avg_stack <- stack(time_avg)
+anova_re <- aov(values ~ ind, data = time_avg_stack)
+summary(anova_re)
+```
+
+- x1 has the smallest mean time.
+
+- the P value is small, but the real world difference is very small.
+
+- The reason for this maybe is we wait until the plane is full. The time for waiting is much larger than the time for a round trip.
+
+### 3.2 Try policy 2.
+
+```{r}
+c130 <- 2
+boeing <- 3
+c5 <- 2
+r_di_ka <- trajectory("di_ka") %>%
+  batch(c5, permanent=FALSE, name = "di-no") %>%
+  seize("c5dn", amount = 1) %>%
+  timeout(5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5) %>%
+          release("c5dn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ro") %>%
+          seize("boeingnro", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnro", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(c5, permanent=FALSE, name = "ro-do") %>%
+                  seize("c5rd", amount = 1) %>%
+                  timeout(8) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(8) %>%
+                      release("c5rd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ka") %>%
+                      seize("c130dk", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130dk",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+                  
+r_di_bag <- trajectory("di_ba") %>%
+  batch(c5, permanent=FALSE, name = "di-no") %>%
+  seize("c5dn", amount = 1) %>%
+  timeout(5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5) %>%
+          release("c5dn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(7.5) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(7.5) %>%
+                      release("boeingrd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ba") %>%
+                      seize("c130db", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130db",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+
+r_di_do <- trajectory("di_do") %>%
+  batch(c5, permanent=FALSE, name = "di-no") %>%
+  seize("c5dn", amount = 1) %>%
+  timeout(5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5) %>%
+          release("c5dn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(15) %>%
+                      release("boeingrd",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE))
+
+r_po_bag <- trajectory("Po_Bag") %>%
+  batch(c5, permanent=FALSE, name = "po-no") %>%
+  seize("c5pn", amount = 1) %>%
+  timeout(5.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5.5) %>%
+          release("c5pn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ro") %>%
+          seize("boeingnro", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnro", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(c5, permanent=FALSE, name = "ro-do") %>%
+                  seize("c5rd", amount = 1) %>%
+                  timeout(7.5) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(7.5) %>%
+                      release("c5rd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ba") %>%
+                      seize("c130db", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130db",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+
+
+r_po_ka <- trajectory("po_ka") %>%
+  batch(c5, permanent=FALSE, name = "po-no") %>%
+  seize("c5pn", amount = 1) %>%
+  timeout(5.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5.5) %>%
+          release("c5pn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(7.5) %>%
+                  clone(n = 2,
+                    trajectory("return") %>%
+                      timeout(7.5) %>%
+                      release("boeingrd", amount =1) %>%
+                      separate(),
+                    trajectory("forward") %>%
+                      separate() %>%
+                      batch(c130, permanent=FALSE, name = "do-ka") %>%
+                      seize("c130dk", amount = 1) %>%
+                      timeout(11) %>%
+                      release("c130dk",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE)))
+
+
+r_po_do <- trajectory("Po_Do") %>%
+  batch(c5, permanent=FALSE, name = "po-no") %>%
+  seize("c5pn", amount = 1) %>%
+  timeout(5.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(5.5) %>%
+          release("c5pn", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(boeing, permanent=FALSE, name = "no-ra") %>%
+          seize("boeingnra", amount = 1) %>%
+          timeout(8.5) %>%
+          clone(n = 2,
+                trajectory("return") %>%
+                  timeout(8.5) %>%
+                  release("boeingnra", amount =1) %>%
+                  separate(),
+                trajectory("forward") %>%
+                  separate() %>%
+                  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+                  seize("boeingrd", amount = 1) %>%
+                  timeout(15) %>%
+                  release("boeingrd",amount=1)
+                    )%>%
+                   synchronize(wait = FALSE))
+
+r_ra_ba <- trajectory("ra_ba") %>%
+  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+  seize("boeingrd", amount = 1) %>%
+  timeout(7.5) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(7.5) %>%
+          release("boeingrd", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(c130, permanent=FALSE, name = "do-ba") %>%
+          seize("c130db", amount = 1) %>%
+          timeout(11) %>%
+          release("c130db",amount=1)
+                    )%>%
+          synchronize(wait = FALSE)
+
+r_ra_do <- trajectory("ra_do") %>%
+  batch(boeing, permanent=FALSE, name = "ra-do") %>%
+  seize("boeingrd", amount = 1) %>%
+  timeout(15) %>%
+  release("boeingrd",amount=1)
+
+r_ro_ba <- trajectory("ro_ba") %>%
+  batch(c5, permanent=FALSE, name = "ro-do") %>%
+  seize("c5rd", amount = 1) %>%
+  timeout(8) %>%
+  clone(n = 2,
+        trajectory("return") %>%
+          timeout(8) %>%
+          release("c5rd", amount = 1) %>%
+          separate(),
+        trajectory("forward") %>%
+          separate() %>%
+          batch(c130, permanent=FALSE, name = "do-ba") %>%
+          seize("c130db", amount = 1) %>%
+          timeout(11) %>%
+          release("c130db",amount=1)
+                    )%>%
+          synchronize(wait = FALSE)
+
+r_ro_do <- trajectory("ro_do") %>%
+  batch(c5, permanent=FALSE, name = "ro-do") %>%
+  seize("c5rd", amount = 1) %>%
+  timeout(16) %>%
+  release("c5rd",amount=1)
+
+time_avg_o <- data.frame(matrix(0, ncol = 9, nrow = 300))
+c5_num <- matrix(c(1, 1, 2, 1, 2, 1, 2, 1, 1), nrow = 3, ncol = 3)
+boeing_num <- matrix(c(1, 1, 2, 1, 2, 1, 2, 1, 1), nrow = 3, ncol = 3)
+for (i in 1:300){
+set.seed(i)
+average_time <- c()
+  for (z in 1:3){
+    for(j in 1:3){
+    
+      env <- simmer("deployment")
+      env %>%
+        add_resource("c5dn", c5_num[z, 1]) %>%
+        add_resource("c5pn", c5_num[z, 2]) %>%
+        add_resource("boeingnra", boeing_num[j, 1]) %>%
+        add_resource("boeingnro", boeing_num[j, 2]) %>%
+        add_resource("boeingrd", boeing_num[j, 3]) %>%
+        add_resource("c5rd", c5_num[z, 3]) %>%
+        add_resource("c130db", 1) %>%
+        add_resource("c130dk", 1) %>%
+        add_generator("di_ka", r_di_ka, function() rexp(1, rate = 10*0.07/24), mon = 1) %>%
+        add_generator("di_bag", r_di_bag, function() rexp(1, rate = 10*0.04/24), mon = 1) %>%
+        add_generator("di_do", r_di_do, function() rexp(1, rate = 10*0.02/24), mon = 1) %>%
+        add_generator("po_bag", r_po_bag, function() rexp(1, rate = 10*0.07/24), mon = 1) %>%
+        add_generator("po_ka", r_po_ka, function() rexp(1, rate = 10*0.08/24), mon = 1) %>%
+        add_generator("po_do", r_po_do, function() rexp(1, rate = 10*0.02/24), mon = 1) %>%
+        add_generator("ra_ba", r_ra_ba, function() rexp(1, rate = 10*0.01/24), mon = 1) %>%
+        add_generator("ra_do", r_ra_do, function() rexp(1, rate = 10*0.02/24), mon = 1) %>%
+        add_generator("ro_ba", r_ro_ba, function() rexp(1, rate = 10*0.01/24), mon = 1) %>%
+        add_generator("ro_do", r_ro_do, function() rexp(1, rate = 10*0.01/24), mon = 1) %>%
+        run(90*24)
+      
+      deploy <- get_mon_arrivals(env)
+      deploy2 <- deploy %>% group_by(name) %>%
+      summarise(time_used = max(end_time) - min(start_time))
+      average_time <- c(average_time, mean(deploy2$time_used))
+    }
+  }
+time_avg_o[i, ] <- average_time
+}
+
+time_avg_o_1 <- colMeans(time_avg_o)
+time_avg_o_2 <- rbind(time_avg_o, time_avg_o_1)
+
+```
+
+- Use ANOVA to see if there is ture difference between each stradegy
+```{r}
+print(time_avg_o_1)
+time_avg_stack <- stack(time_avg_o)
+anova_re <- aov(values ~ ind, data = time_avg_stack)
+summary(anova_re)
+```
+
+- x1 has the smallest mean value
+
+- the P value is small, but the real world difference is very small.
+
+- The reason for this maybe is we wait until the plane is full. The time for waiting is much larger than the time for a round trip.
+
+
+- Use TukeyHSD to find out best assignment
+```{r}
+TukeyHSD(anova_re)
+```
+
+- X1, X2, x4 have similar results.
+- x1 has smallest mean. Choose x1 as the best 
+
+### 3.3 Comparion between best assignment in policy 1 and policy 2.
+
+- do t.test between policy1 and not batching using settings have less mean
+```{r}
+t.test(time_avg_2$X1, time_avg_o_2$X1, alternative = c("greater"))
+```
+- the best stradegy for less batching has 33 hours less mean time than batching, when use c5_num[1,] and boeing_num[1,].
+
+- add 1 more c5 in leg "Rota-Doha"
+- add 1 more boeing 777 in leg "Ramstein-Doha"
+
+- Less Batching has better performances than full batching
+  - low mean time 
+  - low variance 
+- Less Batching also means more flight trips. It will increase the cost.
+
+## 4. Critical Assessment
+
+- Simulations show that policy 2 performs much better than policy 1. The average travel time is 32 hours less
+
+- The result suggest that add more flight in different legs won't have much influence on the final result. This might be caused by selecting routes based on balancing volume.
+
+- There's another policy might be very useful: If the fight in one leg is available, take off when there is one platoon shows up. Platoon can also batch together untill the fight is free.
+But, it seems impossible to do this in simmer pacage.
